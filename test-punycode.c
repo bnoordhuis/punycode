@@ -112,7 +112,7 @@ int main(void) {
   }
   simple_tests[] = {
     { stanza0, "tda" },
-    { stanza1, "Bach" },
+    { stanza1, "Bach-" },
     { stanza2, "bcher-kva" },
     { stanza3, "Willst du die Blthe des frhen, die Frchte des spteren Jahres-x9e96lkal" },
   };
