@@ -5,6 +5,10 @@
 #include <string.h>
 #include <assert.h>
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
+static const char canary[] = { 0xDE, 0xAD, 0xBA, 0xBE };
+
 static size_t unilen(const uint32_t *input) {
   const uint32_t *p;
 
@@ -13,26 +17,32 @@ static size_t unilen(const uint32_t *input) {
   return p - input;
 }
 
-static void test_enc(const uint32_t *input, const char *expected) {
-  static const char canary[] = { 0xDE, 0xAD, 0xBA, 0xBE };
+static void write_canary(void *dst, size_t len) {
+  size_t i;
+
+  for (i = 0; i < len; i += sizeof canary) {
+    memcpy((char *) dst + i, canary, min(len - i, sizeof canary));
+  }
+}
+
+static void check_canary(const void *dst, size_t len, size_t off) {
+  for (; off < len; off++) {
+    assert(*((const char *) dst + off) == canary[off % sizeof canary]);
+  }
+}
+
+static void test_encoder(const uint32_t *input, const char *expected) {
   char dstbuf[1024];
   size_t n_converted;
   size_t dstlen;
-  size_t i;
 
-  for (i = 0; i < sizeof dstbuf; i += sizeof canary) {
-    memcpy(&dstbuf[i], canary, sizeof canary);
-  }
+  write_canary(dstbuf, sizeof dstbuf);
 
   dstlen = sizeof dstbuf;
   n_converted = punycode_encode(input, unilen(input), dstbuf, &dstlen);
 
-  assert(dstlen < sizeof dstbuf);
-
-  /* check for buffer overrun */
-  for (i = dstlen; i < sizeof dstbuf; i++) {
-    assert(dstbuf[i] == canary[i % sizeof canary]);
-  }
+  assert(dstlen <= sizeof dstbuf);
+  check_canary(dstbuf, sizeof dstbuf, dstlen);
 
   assert(n_converted == unilen(input));
   assert(memcmp(dstbuf, expected, strlen(expected)) == 0);
@@ -72,7 +82,7 @@ int main(void) {
   unsigned i;
 
   for (i = 0; i < sizeof(simple_tests) / sizeof(simple_tests[0]); i++) {
-    test_enc(simple_tests[i].unicode, simple_tests[i].punycode);
+    test_encoder(simple_tests[i].unicode, simple_tests[i].punycode);
   }
 
   return 0;
