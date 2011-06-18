@@ -48,6 +48,23 @@ static void test_encoder(const uint32_t *input, const char *expected) {
   assert(memcmp(dstbuf, expected, strlen(expected)) == 0);
 }
 
+static void test_decoder(const char *input, const uint32_t *expected) {
+  uint32_t dstbuf[1024];
+  size_t n_converted;
+  size_t dstlen;
+
+  write_canary(dstbuf, sizeof dstbuf);
+
+  dstlen = sizeof dstbuf;
+  n_converted = punycode_decode(input, strlen(input), dstbuf, &dstlen);
+
+  assert(dstlen <= sizeof dstbuf);
+  check_canary(dstbuf, sizeof dstbuf, dstlen * sizeof(dstbuf[0]));
+
+  assert(n_converted == strlen(input));
+  assert(memcmp(dstbuf, expected, unilen(expected)) == 0);
+}
+
 int main(void) {
   /* ü */
   const uint32_t stanza0[] = { 0xFC, 0 };
@@ -83,6 +100,10 @@ int main(void) {
 
   for (i = 0; i < sizeof(simple_tests) / sizeof(simple_tests[0]); i++) {
     test_encoder(simple_tests[i].unicode, simple_tests[i].punycode);
+  }
+
+  for (i = 0; i < sizeof(simple_tests) / sizeof(simple_tests[0]); i++) {
+    test_decoder(simple_tests[i].punycode, simple_tests[i].unicode);
   }
 
   return 0;
