@@ -99,7 +99,7 @@ static size_t encode_var_int(const size_t bias, const size_t delta, char *const 
 
 static size_t decode_digit(uint32_t v) {
   if (isdigit(v)) {
-    return 22 + (v - '0');
+    return 26 + (v - '0');
   }
   if (islower(v)) {
     return v - 'a';
